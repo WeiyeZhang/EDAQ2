@@ -254,12 +254,18 @@ GovResptracker<- import("OxCGRT_latest.csv",setclass = "tibble")
 BrazilGov <- {GovResptracker %>% 
     filter((str_detect(CountryName,"Brazil")) & (Date > as.Date("2020-03-01") & Date <as.Date("2020-09-24")))}
 
+BrazilGov$Date = as.Date(parse_date_time(BrazilGov$Date,orders=c("y","ym","ymd")))
+
 Binternal.retailphase<-ggplot(BrazilGov, aes(x=BrazilGov$`C7_Restrictions on internal movement`, y=Brazil$gcmr_retail_recreation)) + geom_point()
 print(Binternal.retailphase)
 
 
-Bfacial.work<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_boxplot(aes(group = cut_width(`C8_International travel controls`,0.5)))
+Btravel.creation<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_boxplot(aes(group = cut_width(`C8_International travel controls`,0.5)))
 print(Bfacial.work)
+
+Bconfirm.gather <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=`C4_Restrictions on gatherings`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
+print(Bconfirm.gather)
+
 ```
 
 
