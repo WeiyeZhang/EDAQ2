@@ -25,16 +25,23 @@ Variables:
 
 
 
-We select xx/xx as our baseline.
+Import all packages and our dataset.
 ```{r}
 library(rio)
-CovidData<- import("tidycovid19.csv", setclass="tibble")
-#oxgovresponse<-read.csv("OxCGRT_latest.csv")
 library(lubridate)
-CovidData$date = as.Date(parse_date_time(CovidData$date,orders=c("y","ym","ymd")))
 library(dplyr)
 library(ggplot2)
+library(stringr)
+library(gridExtra)
+library(plyr)
 
+
+CovidData<- import("tidycovid19.csv", setclass="tibble")
+CovidData$date = as.Date(parse_date_time(CovidData$date,orders=c("y","ym","ymd")))
+```
+
+Write the function for altering the cumulative confirmed cases into daily confirmed cases.
+```{r}
 firstdiff <- function(x) {
   shifted <- c(0,x[1:(length(x)-1)])
   result = x-shifted
@@ -48,7 +55,10 @@ CovidData <- mutate(CovidData, daily_confirmed = firstdiff(confirmed))
 CovidData <- mutate(CovidData, daily_deaths = firstdiff(deaths))
 
 
-library(stringr)
+```
+
+Selecting two countries in North America, Canada and Mexico, and two countries in South America: Argentina and Brazil. We choose the baseline date as 2020-03-01.
+```{r}
 BrazilDataPostMar1 <- {CovidData %>% 
     filter ((str_detect(country, "Brazil")) & (date > as.Date("2020-03-01")))}
 ArgentinaDataPostMar1 <- {CovidData %>% 
@@ -57,34 +67,36 @@ CanadaDataPostMar1 <- {CovidData %>%
     filter ((str_detect(country, "Canada")) & (date > as.Date("2020-03-01")))}
 MexicoDataPostMar1 <- {CovidData %>% 
     filter ((str_detect(country, "Mexico")) & (date > as.Date("2020-03-01")))}
+```
 
-
-
+Then we extract all the variables from our variables list to our data frame.
+```{r}
 Brazil <- {BrazilDataPostMar1%>% 
     filter(country == "Brazil") %>%
-    select(date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
 
 Mexico <-{MexicoDataPostMar1%>% 
-    select(date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
 
 Canada<-{CanadaDataPostMar1 %>% 
-    select(date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
 
 Argentina<-{ArgentinaDataPostMar1 %>% 
-    select(date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
-
-
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,gcmr_retail_recreation,gcmr_grocery_pharmacy,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
+```
+We compile the data set of four countries into one data set.
+```{r}
+Americadata<-rbind.fill(Argentina,Brazil,Canada,Mexico)
 ```
 
 
 For Brazil:
-1.daily confirmed cases and daily deaths. 
+1.First look at the relationship daily confirmed cases and daily deaths, we plot the  
 ```{r}
-plotBconfirmed.date <- {Brazil%>% ggplot(aes(x = date, y = daily_confirmed))} + geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
+plotBconfirmed.date <- {Brazil%>% ggplot(aes(x = date, y = daily_confirmed))} +geom_smooth(se=FALSE)+ geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
 
-plotBdeaths.date <- {Brazil%>% ggplot(aes(x = date, y = daily_deaths))} + geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
+plotBdeaths.date <- {Brazil%>% ggplot(aes(x = date, y = daily_deaths))} +geom_smooth(se=FALSE)+ geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
 
-library(gridExtra)
 grid.arrange(plotBconfirmed.date,plotBdeaths.date)
 ```
 
@@ -92,8 +104,7 @@ grid.arrange(plotBconfirmed.date,plotBdeaths.date)
 2.Relationship between lockdown measures and the frequency that people visit retail and recreation places.
 
 ```{r}
-
-plotBlockdown.retail<- {Brazil%>% ggplot(aes(y = lockdown,x = gcmr_retail_recreation))} +geom_point()+ggtitle()
+plotBlockdown.retail<- {Brazil%>% ggplot(aes(y = lockdown,x = gcmr_retail_recreation))} +geom_point()
 print(plotBlockdown.retail)
 ```
 3.Relationship between 
@@ -150,6 +161,23 @@ grid.arrange(pubheal.retailphase1,pubheal.retailphase2)
 ```
 
 
+Let's have a general overview on four chosen coutries.
+1.
+```{r}
+Americalockdown<-{Americadata%>%ggplot(aes(x=date,y=lockdown))}+geom_jitter(aes(color=country))
+print(Americalockdown)
+```
+
+```{r}
+Americarecreation <- {Americadata %>% ggplot()} +
+    geom_histogram(aes(x=gcmr_retail_recreation), binwidth = 0.7)
+print(Americarecreation)
+```
+
+```{r}
+ggplot(data = Americadata, aes(x=country,y=gcmr_retail_recreation,fill=country))+geom_boxplot()+scale_x_discrete(breaks=c("Argentina","Brazil","Canada","Mexico"))
+```
+
 
 We now have a look into Government Response Index Tracker collected by Oxford University,
 
@@ -162,10 +190,8 @@ BrazilGov <- {GovResptracker %>%
 plotBDate.Test <- {BrazilGov%>% ggplot(aes(x = Date,y =BrazilGov$`H2_Testing policy`))}+geom_line()
 print(plotBDate.Test)
 
-
-length(Brazil$gcmr_retail_recreation)
-length(BrazilGov$`C7_Restrictions on internal movement`)
-Binternal.retailphase<-ggplot(BrazilGov, aes(x=BrazilGov$`C7_Restrictions on internal movement`, y=Brazil$gcmr_retail_recreation)) + geom_line() + labs(title='Re')
+Binternal.retailphase<-ggplot(BrazilGov, aes(x=BrazilGov$`C7_Restrictions on internal movement`, y=Brazil$gcmr_retail_recreation)) + geom_point() + labs(title='Re')
 print(Binternal.retailphase)
 ```
+
 
