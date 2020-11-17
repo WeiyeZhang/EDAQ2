@@ -2,10 +2,13 @@
 title: "EDA For Question2"
 author: "U1813544"
 output: html_document
+fontsize: 11pt
+geometry: margin=2cm
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=7, fig.height=4)
 ```
 
 Variables:
@@ -23,11 +26,7 @@ Variables:
 * gcmr_residential, 
 * gcmr_workplaces
 
-
-
-Import all packages and our dataset.
-
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE}
 library(rio)
 library(lubridate)
 library(dplyr)
@@ -41,9 +40,7 @@ CovidData<- import("tidycovid19.csv", setclass="tibble")
 CovidData$date = as.Date(parse_date_time(CovidData$date,orders=c("y","ym","ymd")))
 ```
 
-Write the function for altering the cumulative confirmed cases into daily confirmed cases.
-
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE}
 firstdiff <- function(x) {
   shifted <- c(0,x[1:(length(x)-1)])
   result = x-shifted
@@ -61,7 +58,7 @@ CovidData <- mutate(CovidData, daily_deaths = firstdiff(deaths))
 
 Selecting two countries in North America, Canada and Mexico, and two countries in South America: Argentina and Brazil. We choose the baseline date as 2020-03-01.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE}
 BrazilDataPostMar1 <- {CovidData %>% 
     filter ((str_detect(country, "Brazil")) & (date > as.Date("2020-03-01")))}
 ArgentinaDataPostMar1 <- {CovidData %>% 
@@ -74,7 +71,7 @@ MexicoDataPostMar1 <- {CovidData %>%
 
 Then we extract all the variables from our variables list to our data frame.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE}
 Brazil <- {BrazilDataPostMar1%>% 
     filter(country == "Brazil") %>%
     select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,apple_mtr_driving,gcmr_retail_recreation,gcmr_workplaces,gcmr_residential, gcmr_workplaces) }
@@ -91,15 +88,16 @@ Argentina<-{ArgentinaDataPostMar1 %>%
 
 We compile the data set of four countries into one data set.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE}
 Americadata<-rbind.fill(Argentina,Brazil,Canada,Mexico)
 ```
 
 
-For Brazil:
+## Brazil:
+
 1.First look at the relationship daily confirmed cases and daily deaths
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotBconfirmed.date <- {Brazil%>% ggplot(aes(x = date, y = daily_confirmed))} +geom_smooth(se=FALSE)+ geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
 
 plotBdeaths.date <- {Brazil%>% ggplot(aes(x = date, y = daily_deaths))} +geom_smooth(se=FALSE)+ geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Brazil")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
@@ -108,29 +106,30 @@ grid.arrange(plotBconfirmed.date,plotBdeaths.date)
 ```
 
 
-2.Relationship between lockdown measures and the frequency that people visit retail and recreation places in Brazil.
+2.
 
-```{r}
-plotBlockdown.retail<- {Brazil%>% ggplot(aes(x = lockdown,y = gcmr_retail_recreation))} +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+plotBlockdown.retail<- {Brazil%>% ggplot(aes(x = lockdown,y = gcmr_retail_recreation))} +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))+ggtitle("Relationship between lockdown measures and the frequency that people visit retail and recreation places.", subtitle = "Drawn from Google Community Mobility Reports")+xlab("Number of lock measures")+ylab("Activity in recreation (% change from baseline)")
 print(plotBlockdown.retail)
 ```
 
 3.Relationship between Number of public health measures and the frequency that people visit retail and recreation places in Brazil.
 
-```{r}
-ggplot(Brazil, aes(x=pub_health, y=gcmr_retail_recreation)) +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))+labs(x="Number of public health measures",y="Frequency people visit retail and recreation places%") 
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(Brazil, aes(x=pub_health, y=gcmr_retail_recreation)) +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))+labs(x="Number of public health measures",y="Activity in recreation (% change from baseline)",title ="Relationship between Number of public health measures and the frequency that people visit recreation places",subtitle =" Drawn from Google Community Mobility Reports")
 ```
 
-4.Relationship between Apple Maps usage for driving directions and the frequency that people visit retail and reacreation places.
+4.
 
-```{r}
-ggplot(Brazil, aes(y=apple_mtr_driving, x=soc_dist)) +geom_point()+ geom_smooth(se=FALSE)+labs(x="Number of social distancing measures",y="Apple Maps usage for driving directions") 
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(Brazil, aes(y=apple_mtr_driving, x=soc_dist)) +geom_boxplot(aes(group = cut_width(soc_dist, 0.5)))+labs(x="Number of social distancing measures",y="Apple Maps usage for driving directions(% change from baseline)",title = "Relationship between maps usage for driving and frequency that people visit reacreation places.",subtitle = "Drawn from Apple Maps Usage")
 ```
 
-For Argentina,
+## Argentina
+
 1.Daily confirmed cases and daily deaths in Argentina.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotAconfirmed.date <- {Argentina%>% ggplot(aes(x = date, y = daily_confirmed))} + geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Argentina")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
 
 plotAdeaths.date <- {Argentina%>% ggplot(aes(x = date, y = daily_deaths))} + geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Argentina")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
@@ -140,22 +139,22 @@ grid.arrange(plotAconfirmed.date,plotAdeaths.date)
 
 2.Relationship between lockdown measures and the frequency that people visit retail and recreation places in Argentina.
 
-```{r}
-plotAlockdown.retail<- {Argentina%>% ggplot(aes(x = lockdown,y = gcmr_retail_recreation))} +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+plotAlockdown.retail<- {Argentina%>% ggplot(aes(x = lockdown,y = gcmr_retail_recreation))} +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))+ggtitle("Relationship between lockdown measures and the frequency that people visit recreation places.", subtitle = "Drawn from Google Community Mobility Reports")+xlab("Number of lock measures")+ylab("Activity in recreation (% change from baseline)")
 print(plotAlockdown.retail)
 ```
 
 3.Relationship between Number of social distancing measures and the frequency that people visit workplaces in Argentina.
 
-```{r}
-ggplot(Argentina, aes(x=soc_dist, y=gcmr_workplaces))+geom_boxplot(aes(group = cut_width(soc_dist, 0.4)))+labs(x="Number of social distancing measures",y="Frequency people visit work places%") 
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(Argentina, aes(x=soc_dist, y=gcmr_workplaces))+geom_boxplot(aes(group = cut_width(soc_dist, 0.4)))+labs(x="Number of social distancing measures",y="Frequency people visit work places(% from baseline",title ="Relationship between Number of social distancing measures and the frequency that people visit workplaces.",subtitle = "Drawn from Google Community Mobility Reports") 
 ```
 
 
-For Mexico,
+## Mexico
 1.Daily confirmed cases and daily deaths in Mexico.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotMconfirmed.date <- {Mexico%>% ggplot(aes(x = date, y = daily_confirmed))} + geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Mexico")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
 
 plotMdeaths.date <- {Mexico%>% ggplot(aes(x = date, y = daily_deaths))} + geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Mexico")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
@@ -165,22 +164,23 @@ grid.arrange(plotMconfirmed.date,plotMdeaths.date)
 
 2.Relationship between lockdown measures and the frequency that people visit retail and recreation places in Mexico.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotMlockdown.retail<- {Mexico%>% ggplot(aes(x = lockdown,y = gcmr_retail_recreation))} +  geom_boxplot(aes(group = cut_width(lockdown, 0.5)))
 print(plotMlockdown.retail)
 ```
 
 3.Relationship between Number of social distancing measures and the frequency that people visit workplaces in Mexico.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 ggplot(Mexico, aes(x=soc_dist, y=gcmr_workplaces)) +  geom_boxplot(aes(group = cut_width(soc_dist,0.5)))+labs(x="Number of social distancing measures",y="Frequency people visit work places%") +geom_smooth(se=FALSE)
 ```
 
 
-For Canada:
+## Canada
+
 1.Daily confirmed cases and daily deaths in Canada.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotCconfirmed.date <- {Canada%>% ggplot(aes(x = date, y = daily_confirmed))} + geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Canada")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
 
 plotCdeaths.date <- {Canada%>% ggplot(aes(x = date, y = daily_deaths))} + geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Canada")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
@@ -192,28 +192,30 @@ we have two phases in Canada, so we divide it by two periods.One starts at March
 
 Let's look at the relationship between number of public health measures and frequency that people visit retail and recreation places in Canada.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 Canada_phase1 <- filter(Canada, date < "2020-07-1")
 Canada_phase2 <- filter(Canada,date>="2020-07-1")
 
-pubheal.retailphase1<-ggplot(Canada_phase1, aes(x=pub_health, y=gcmr_retail_recreation)) + geom_point() + labs(title='Phase 1')
+pubheal.retailphase1<-ggplot(Canada_phase1, aes(x=pub_health, y=gcmr_retail_recreation)) + geom_point() + labs(x="Number of public health measures",title="Relationship between number of public health measures and activity in recreation places.",subtitle='Phase 1')
 
 
-pubheal.retailphase2<-ggplot(Canada_phase2, aes(x=pub_health, y=gcmr_retail_recreation)) + geom_point() + labs(title='Phase 2')
+pubheal.retailphase2<-ggplot(Canada_phase2, aes(x=pub_health, y=gcmr_retail_recreation)) + geom_point() + labs(x="Number of public health measures",y="",subtitle='Phase 2')
 grid.arrange(pubheal.retailphase1,pubheal.retailphase2)
 ```
+
 2.Relationship between social distancing measures and the frequency that people visit retail and recreation places in Canada.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotCsoc1.retail<- {Canada_phase1%>% ggplot(aes(x =soc_dist,y = gcmr_retail_recreation))} +  geom_boxplot((aes(group = cut_width(soc_dist,0.5))))
 
 plotCsoc2.retail<- {Canada_phase2%>% ggplot(aes(x =soc_dist,y = gcmr_retail_recreation))} +  geom_boxplot((aes(group = cut_width(soc_dist,0.5))))
 
 grid.arrange(plotCsoc1.retail,plotCsoc2.retail)
 ```
+
 3.Relationship between Number of moving restrictions and the frequency that people visit workplaces in Canada.
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 plotmov1.work<-ggplot(Canada_phase1, aes(x=mov_rest, y=gcmr_workplaces)) +  geom_boxplot(aes(group = cut_width(mov_rest,0.5)))+labs(x="Number of moving restrictions",y="Frequency people visit work places%")
 
 plotmov2.work<-ggplot(Canada_phase2, aes(x=mov_rest, y=gcmr_workplaces)) +  geom_boxplot(aes(group = cut_width(mov_rest,0.5)))+labs(x="Number of moving restrictions",y="Frequency people visit work places%")
@@ -223,48 +225,58 @@ grid.arrange(plotmov1.work,plotmov2.work)
 ```
 
 
+## Overview
 
 Let's have a general overview on four chosen coutries.
 1.Number of lockdown measures in the whole period in different countries.
 
-```{r}
-Americalockdown<-{Americadata%>%ggplot(aes(x=date,y=lockdown))}+geom_jitter(aes(color=country))
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Americalockdown<-{Americadata%>%ggplot(aes(x=date,y=lockdown))}+geom_jitter(aes(color=country))+labs(x="Date",y="Number of lockdowm measures",title = "Trend of number of lockdown measures in four chosen countries.")
 print(Americalockdown)
 ```
 2.Relationship between 
-```{r}
-Americarecreation <- {Americadata %>% ggplot(aes(x=lockdown,y=gcmr_retail_recreation))}+geom_jitter(aes(color=country))
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Americarecreation <- {Americadata %>% ggplot(aes(x=lockdown,y=gcmr_retail_recreation))}+geom_jitter(aes(color=country))+labs(x="Number of lockdown measures", y="Activity change in recreation ",title = "Relationship between number of lockdown measures and activity change in recreation")
     
 print(Americarecreation)
 ```
 
 3.We compare the relationship between the number of social distancing measures and the frequency that people visit retail and recreation places in different countries.
 
-```{r}
-ggplot(data = Americadata, aes(x=soc_dist,y=gcmr_retail_recreation))+geom_jitter(aes(color=country))
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(data = Americadata, aes(x=soc_dist,y=gcmr_retail_recreation))+geom_jitter(aes(color=country))+labs(x="Number of social distancing measures",y="Activity change in recreation")
 ```
 
-Condiser other datasets.
+## Condiser other datasets.
 
-We now have a look into Government Response Index Tracker collected by Oxford University,
+### We now have a look into Government Response Index Tracker collected by Oxford University,
 
-```{r}
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 GovResptracker<- import("OxCGRT_latest.csv",setclass = "tibble")
 
 BrazilGov <- {GovResptracker %>% 
     filter((str_detect(CountryName,"Brazil")) & (Date > as.Date("2020-03-01") & Date <as.Date("2020-09-24")))}
 
 BrazilGov$Date = as.Date(parse_date_time(BrazilGov$Date,orders=c("y","ym","ymd")))
+```
 
-Binternal.retailphase<-ggplot(BrazilGov, aes(x=BrazilGov$`C7_Restrictions on internal movement`, y=Brazil$gcmr_retail_recreation)) + geom_point()
+## Brazil
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Binternal.retailphase<-ggplot(BrazilGov, aes(x=BrazilGov$`C7_Restrictions on internal movement`, y=Brazil$gcmr_retail_recreation)) + geom_point()+labs(x="Number of restrictions on internal movement", y="Activity change in recreation")
 print(Binternal.retailphase)
 
 
-Btravel.creation<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_boxplot(aes(group = cut_width(`C8_International travel controls`,0.5)))
-print(Bfacial.work)
+Btravel.creation<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_point()+labs(x="Number of restrictions on international travel", y="Activity change in recreation")
+print(Btravel.creation)
 
-Bconfirm.gather <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=`C4_Restrictions on gatherings`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
+Bconfirm.gather <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=`C4_Restrictions on gatherings`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs(y="Daily confirmed cases")
 print(Bconfirm.gather)
+
+
+Bconfirm.school <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=BrazilGov$`C1_School closing`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs(y="Daily confirmed cases")
+print(Bconfirm.school)
+
 
 ```
 
