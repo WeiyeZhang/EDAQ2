@@ -1,0 +1,50 @@
+## Condiser other datasets.
+
+### We now have a look into Government Response Index Tracker collected by Oxford University, the interpretation of the variables is [here](https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/codebook.md)
+
+Variables:
+*C1_School closing
+*C4_Restrictions on gatherings
+*C6_Stay at home requirements
+*C7_Restrictions on internal movement
+*C8_International travel controls
+
+```{r}
+c("*C1_School closing","*C4_Restrictions on gatherings","*C6_Stay at home requirements","*C7_Restrictions on internal movement","*C8_International travel controls",)
+```
+
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+GovResptracker<- import("OxCGRT_latest.csv",setclass = "tibble")
+
+BrazilGov <- {GovResptracker %>% 
+    filter((str_detect(CountryName,"Brazil")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+
+BrazilGov$Date = as.Date(parse_date_time(BrazilGov$Date,orders=c("y","ym","ymd")))
+```
+
+## Brazil
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Bretail.internal<-{BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_retail_recreation,color=`C7_Restrictions on internal movement`))}+geom_point()+labs(x="date", y="Activity change in recreation")
+print(Bretail.internal)
+
+Btravel.creation<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_point()+labs(x="Number of restrictions on international travel", y="Activity change in recreation")
+print(Btravel.creation)
+
+Bconfirm.gather <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=`C4_Restrictions on gatherings`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs(y="Daily confirmed cases")
+print(Bconfirm.gather)
+
+```
+
+## By the plot below, we observe that public reaction after different level of closing workplaces. The frequency of visiting workplaces sharply decreased after government required closing(or work from home) for all-but-essential workplaces (eg grocery stores, doctors). But people tend to not obey the 
+
+```{r}
+Bworkplaces.closing <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_workplaces,color=BrazilGov$`C2_Workplace closing`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
+print(Bworkplaces.closing)
+```
+
+```{r}
+Brecreation.internal <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_retail_recreation,color=BrazilGov$`C7_Restrictions on internal movement`))}+geom_point()+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")+labs(y="Activity in retail and recreation places (% change from baseline)",title = "Change in activity  in retail and recreation places with restrictions on internal movement.")
+print(Brecreation.internal)
+```
