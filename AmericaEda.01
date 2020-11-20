@@ -25,7 +25,7 @@ Variables:
 * gcmr_workplaces,
 * gcmr_residential, 
 * gcmr_workplaces.
-
+The definitions of variables could be found [here](https://joachim-gassen.github.io/tidycovid19/) 
 
 
 ```{r,echo=FALSE,results='hide',message=FALSE}
