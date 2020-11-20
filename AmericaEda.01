@@ -1,0 +1,187 @@
+---
+title: "EDA For Question2"
+author: "U1813544"
+output: html_document
+fontsize: 11pt
+geometry: margin=2cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=9, fig.height=6) 
+```
+
+Variables:
+* date, 
+* daily_confirmed,
+* daily_deaths, 
+* soc_dist,
+* mov_rest,
+* pub_health,
+* lockdown,
+* gov_soc_econ,
+* apple_mtr_driving,
+* gcmr_retail_recreation,
+* gcmr_workplaces,
+* gcmr_residential, 
+* gcmr_workplaces.
+
+
+
+```{r,echo=FALSE,results='hide',message=FALSE}
+library(rio)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(gridExtra)
+library(plyr)
+
+
+CovidData<- import("tidycovid19.csv", setclass="tibble")
+CovidData$date = as.Date(parse_date_time(CovidData$date,orders=c("y","ym","ymd")))
+```
+
+```{r,echo=FALSE,results='hide',message=FALSE}
+firstdiff <- function(x) {
+  shifted <- c(0,x[1:(length(x)-1)])
+  result = x-shifted
+  which_negative = which(result<0)
+  result[which_negative] = NA
+  return(result)
+}
+
+
+CovidData <- mutate(CovidData, daily_confirmed = firstdiff(confirmed))
+CovidData <- mutate(CovidData, daily_deaths = firstdiff(deaths))
+
+
+```
+
+Selecting two countries in North America, Canada and Mexico, and two countries in South America: Argentina and Brazil. We choose the baseline date as 2020-02-06.
+
+```{r,echo=FALSE,results='hide',message=FALSE}
+BrazilDataPostMar1 <- {CovidData %>% 
+    filter ((str_detect(country, "Brazil")) & (date > as.Date("2020-02-06")))}
+ArgentinaDataPostMar1 <- {CovidData %>% 
+    filter ((str_detect(country, "Argentina")) & (date > as.Date("2020-02-06")))}
+CanadaDataPostMar1 <- {CovidData %>% 
+    filter ((str_detect(country, "Canada")) & (date > as.Date("2020-02-06")))}
+MexicoDataPostMar1 <- {CovidData %>% 
+    filter ((str_detect(country, "Mexico")) & (date > as.Date("2020-02-06")))}
+```
+
+Then we extract all the variables from our variables list to our data frame.
+
+```{r,echo=FALSE,results='hide',message=FALSE}
+Brazil <- {BrazilDataPostMar1%>% 
+    filter(country == "Brazil") %>%
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,apple_mtr_driving,gcmr_retail_recreation,gcmr_workplaces,gcmr_residential, gcmr_workplaces,gtrends_score,gcmr_grocery_pharmacy) }
+
+Mexico <-{MexicoDataPostMar1%>% 
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,apple_mtr_driving,gcmr_retail_recreation,gcmr_workplaces,gcmr_residential, gcmr_workplaces,gtrends_score,gcmr_grocery_pharmacy) }
+
+Canada<-{CanadaDataPostMar1 %>% 
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,apple_mtr_driving,gcmr_retail_recreation,gcmr_workplaces,gcmr_residential, gcmr_workplaces,gtrends_score, gcmr_grocery_pharmacy) }
+
+Argentina<-{ArgentinaDataPostMar1 %>% 
+    select(country,date, daily_confirmed,daily_deaths, soc_dist,mov_rest,pub_health,lockdown,gov_soc_econ,apple_mtr_driving,gcmr_retail_recreation,gcmr_workplaces,gcmr_residential, gcmr_workplaces,gtrends_score,gcmr_grocery_pharmacy) }
+
+country<-c("Brazil","Mexico","Canada","Argentina")
+Americadata<-rbind.fill(Argentina,Brazil,Canada,Mexico)
+```
+
+## Overview
+
+Let's have a general overview on four chosen coutries.
+1.Daily confirmed cases in the whole period in different countries.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Americaconfirmed<-{Americadata%>%ggplot(aes(x=date,y=daily_confirmed,color=country))}+labs(x="Date",y="Number of lockdowm measures",title = "Daily confirmed in four chosen countries.")+geom_point()+scale_color_brewer(palette="Set1")
+print(Americaconfirmed)
+```
+2.Relationship between 
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Americarecreation <- {Americadata %>% ggplot(aes(x=lockdown,y=gcmr_retail_recreation,color=country))}+geom_point()+labs(x="Number of lockdown measures", y="Activity change in recreation ",title = "Relationship between number of lockdown measures and activity change in recreation")+scale_color_brewer(palette="Set1")
+    
+print(Americarecreation)
+```
+
+3.We compare the relationship between the number of social distancing measures and the frequency that people visit retail and recreation places in different countries.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(data = Americadata, aes(x=soc_dist,y=gcmr_retail_recreation))+geom_jitter(aes(color=country))+labs(x="Number of social distancing measures",y="Activity change in recreation")
+```
+
+## Change in Activity in retail and recreation places.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+plotretail.date <- ggplot(data=Americadata,aes(x = date, y =gcmr_retail_recreation, color=country)) + geom_point()+labs(x="Date" ,y="Activity in retail and recreation places %change from baseline" ,title = "Change in activity in retail and recreation places")+scale_x_date(date_breaks = "2 weeks", date_labels = "%d/%m")
+print(plotretail.date)
+
+```
+
+The graph indicates that there was a sharp decrease in activity in retail and recreation places for every country.
+
+For Brazil, Sao Paulo government introduced "lockdown" measures in 24 March 2020, retail and recreation places activity decreased approximately linearly by 50%, then slowly increased from the beginning of May. There is also a clear difference between weekdays and weekends: residential activity at weekends is lower than during weekdays.
+### Brazil
+
+1. Activity change in retail and recreation in Brazil with observations of number of lockdown measures in Brazil.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Bre<-ggplot(Brazil, aes(y=Brazil$gcmr_retail_recreation, x=date,color=Brazil$lockdown)) +geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs("retail recreation/lockdown")
+Bgro<-ggplot(Brazil, aes(y=Brazil$gcmr_grocery_pharmacy, x=date,color=Brazil$lockdown)) +geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs("grocery pharmacy/lockdown")
+Bdriving<-ggplot(Brazil, aes(y=Brazil$apple_mtr_driving,x=date, color=Brazil$lockdown))+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs(title = "driving/lockdown")
+
+grid.arrange(Bre,Bgro,Bdriving)
+```
+
+2.Relationship between Number of public health measures and the frequency that people visit retail and recreation places in Brazil.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+ggplot(Brazil, aes(x=pub_health, y=gcmr_retail_recreation)) +  geom_point()+labs(x="Number of public health measures",y="Activity in recreation (% change from baseline)",title ="Relationship between Number of public health measures and the frequency that people visit recreation places",subtitle =" Drawn from Google Community Mobility Reports")
+```
+
+3. apple_mtr_driving and soc_dist
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Bdriving.soc<-ggplot(Brazil, aes(y=apple_mtr_driving, x=soc_dist)) +geom_point()+labs(x="Number of social distancing measures",y="Apple Maps usage for driving directions(% change from baseline)",title = "Relationship between maps usage for driving and the number of social distancing measures in Brazil.",subtitle = "Drawn from Apple Maps Usage")
+
+Bdriving.date.soc<-ggplot(Brazil, aes(y=apple_mtr_driving,x=date, color=soc_dist)) +geom_point()+labs(x="date",y="Apple Maps usage for driving directions(% change from baseline)",title = "Activity change in maps usage for driving while observing the number of social distancing measures in Brazil.",subtitle = "Drawn from Apple Maps Usage")
+grid.arrange(Bdriving.soc,Bdriving.date.soc)
+```
+
+
+
+
+
+## Argentina
+
+
+## Mexico
+(same pattern like Brazil just skipped now)
+
+
+
+## Canada
+
+1.Daily confirmed cases and daily deaths in Canada.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+plotCconfirmed.date <- {Canada%>% ggplot(aes(x = date, y = daily_confirmed))} + geom_point()+labs(x="Date" ,y="Daily Confirmed Cases" ,title = "Daily Confirmed Cases in Canada")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
+
+plotCdeaths.date <- {Canada%>% ggplot(aes(x = date, y = daily_deaths))} + geom_point()+labs(x="Date" ,y="Daily Deaths" ,title = "Daily Deaths in Canada")+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+geom_smooth(se=FALSE)
+
+grid.arrange(plotCconfirmed.date,plotCdeaths.date)
+```
+
+we have two phases in Canada, so we divide it by two periods.One starts at March 1 and ends at June 30. Another one starts at July 1.
+
+Let's look at the relationship between number of public health measures and frequency that people visit retail and recreation places in Canada.
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Canada_phase1 <- filter(Canada, date < "2020-07-1")
+Canada_phase2 <- filter(Canada,date>="2020-07-1")
+
+```
+
