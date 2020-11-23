@@ -1,16 +1,51 @@
+
 ## Condiser other datasets.
 
 ### We now have a look into Government Response Index Tracker collected by Oxford University, the interpretation of the variables is [here](https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/codebook.md)
 
-Variables:
-*C1_School closing
-*C4_Restrictions on gatherings
-*C6_Stay at home requirements
-*C7_Restrictions on internal movement
-*C8_International travel controls
+The variables chosen shows below with definition and coding, each measured in ordinal scale.
 
-```{r}
-c("*C1_School closing","*C4_Restrictions on gatherings","*C6_Stay at home requirements","*C7_Restrictions on internal movement","*C8_International travel controls",)
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+varname<-c("*C1_School closing","*C2_Workplace closing","*C4_Restrictions on gatherings","*C6_Stay at home requirements","*C7_Restrictions on internal movement","*C8_International travel controls")
+vardef<-c("Record closings of schools and universities","Record closings of workplaces","Record limits on private gatherings","Record orders to 'shelter-in-place' and otherwise confine to the home","Record restrictions on internal movement between cities/regions","Record restrictions on international travel. 
+          Note: this records policy for foreign travellers, not citizens")
+
+c1<-c("0 - no measures,   1 - recommend closing or all schools open with alterations resulting in significant differences compared to non-Covid-19 operations,   2 - require closing (only some levels or categories, eg just high school, or just public schools,   3 - require closing all levels \nBlank - no data")
+
+c2<-c("0 - no measures,
+1 - recommend closing (or recommend work from home),
+2 - require closing (or work from home) for some sectors or categories of workers,
+3 - require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors),
+Blank - no data")
+
+c4<-c("	0 - no restrictions,
+1 - restrictions on very large gatherings (the limit is above 1000 people),  
+2 - restrictions on gatherings between 101-1000 people,  
+3 - restrictions on gatherings between 11-100 people,  
+4 - restrictions on gatherings of 10 people or less,
+Blank - no data")
+
+c6=c("	0 - no measures,
+1 - recommend not leaving house,
+2 - require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips,
+3 - require not leaving house with minimal exceptions (eg allowed to leave once a week, or only one person can leave at a time, etc),
+Blank - no data")
+
+c7=c("0 - no measures ,
+1 - recommend not to travel between regions/cities ,  
+2 - internal movement restrictions in place ,
+Blank - no data")
+
+c8=("0 - no restrictions ,  
+1 - screening arrivals ,  
+2 - quarantine arrivals from some or all regions ,  
+3 - ban arrivals from some regions ,  
+4 - ban on all regions or total border closure ,  
+Blank - no data")
+varcoding=c(c1,c2,c4,c6,c7,c8)
+data.frame(varname, vardef, varcoding) %>%
+  kbl( col.names = c("Variable name", "Variable definition", "Variable coding")) %>%
+   kable_styling()
 ```
 
 
@@ -19,32 +54,110 @@ GovResptracker<- import("OxCGRT_latest.csv",setclass = "tibble")
 
 BrazilGov <- {GovResptracker %>% 
     filter((str_detect(CountryName,"Brazil")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
-
 BrazilGov$Date = as.Date(parse_date_time(BrazilGov$Date,orders=c("y","ym","ymd")))
+
+CanadaGov <- {GovResptracker %>% 
+    filter((str_detect(CountryName,"Canada")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+CanadaGov$Date = as.Date(parse_date_time(CanadaGov$Date,orders=c("y","ym","ymd")))
+
+
+ArgentinaGov<-{GovResptracker %>% 
+    filter((str_detect(CountryName,"Argentina")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+ArgentinaGov$Date = as.Date(parse_date_time(ArgentinaGov$Date,orders=c("y","ym","ymd")))
+
+MexicoGov<-{GovResptracker %>% 
+    filter((str_detect(CountryName,"Mexico")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+MexicoGov$Date = as.Date(parse_date_time(MexicoGov$Date,orders=c("y","ym","ymd")))
+
+AmericaGov<-rbind(BrazilGov,CanadaGov,ArgentinaGov,MexicoGov)
+
+UkGov<-{GovResptracker%>%
+        filter((str_detect(CountryName,"United Kingdom")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+UkGov$Date = as.Date(parse_date_time(UkGov$Date,orders=c("y","ym","ymd")))
+
+ItalyGov<- {GovResptracker%>%
+        filter((str_detect(CountryName,"Italy")) & (Date > as.Date("2020-02-06") & Date <as.Date("2020-09-24")))}
+ItalyGov$Date = as.Date(parse_date_time(ItalyGov$Date,orders=c("y","ym","ymd")))
 ```
 
-## Brazil
+### Look at Brazil in detail.
+
+#### 1.Activity change in retail and recreation places.
 
 ```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
-Bretail.internal<-{BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_retail_recreation,color=`C7_Restrictions on internal movement`))}+geom_point()+labs(x="date", y="Activity change in recreation")
-print(Bretail.internal)
+Bretail.internal<-{BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_retail_recreation,color=`C6_Stay at home requirements`))}+geom_point()+labs(x="date", y="Activity change in recreation",title = "Recovering of retail and recreation activity ",subtitle = "Observing requirements on staying at home.")+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")
 
-Btravel.creation<-{BrazilGov %>% ggplot(aes(x=`C8_International travel controls`,y=Brazil$gcmr_retail_recreation))}+geom_point()+labs(x="Number of restrictions on international travel", y="Activity change in recreation")
-print(Btravel.creation)
 
-Bconfirm.gather <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$daily_confirmed,color=`C4_Restrictions on gatherings`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")+labs(y="Daily confirmed cases")
-print(Bconfirm.gather)
+covBretail.internal<-{BrazilGov%>% ggplot(aes(x=`C6_Stay at home requirements`,y=Brazil$gcmr_retail_recreation,))}+geom_point()+labs(x="Level of staying at home requirement",y="Activity change in retail and recreation places",title= "Covariation between level of staying at home requirements and activity change in retail and recreation places")+scale_color_brewer(palette="Set1")+geom_smooth(se=FALSE)
 
+grid.arrange(Bretail.internal,covBretail.internal)
 ```
 
-## By the plot below, we observe that public reaction after different level of closing workplaces. The frequency of visiting workplaces sharply decreased after government required closing(or work from home) for all-but-essential workplaces (eg grocery stores, doctors). But people tend to not obey the 
+#### 2.Activity change in frequency that people visiting the residencial places, given level of requirements on staying at home.
 
-```{r}
-Bworkplaces.closing <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_workplaces,color=BrazilGov$`C2_Workplace closing`))}+geom_point()+scale_x_date(date_breaks = "months", date_labels = "%b-%y")
-print(Bworkplaces.closing)
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Bresi.home <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_residential,color=`C6_Stay at home requirements`))}+geom_point()+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")+labs(y="Activity in residential places (% change from baseline)",title = "Change in activity  in residential places with requirements on staying at home.")
+
+covBresi.home <- {BrazilGov %>% ggplot(aes(y=Brazil$gcmr_residential,x=BrazilGov$`C6_Stay at home requirements`))}+geom_point()+labs(x="Level of requirements on staying at home",y="Activity change in workplaces",title = "Covariation between level of workplaces closing and acivity change in workplaces.")+geom_smooth(se=FALSE)
+
+grid.arrange(Bresi.home,covBresi.home)
+```
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+covAmeretail.internal<-{AmericaGov%>% ggplot(aes(x=`C6_Stay at home requirements`,y=Americadata$gcmr_retail_recreation,))}+geom_point()+labs(x="Level of staying at home requirement",y="Activity change in grocery and pharmacy places",title= "Covariation between level9 of moving restrictions and activity change in grocery and pharmacy places in four chosen country")+scale_color_brewer(palette="Set1")+geom_smooth(se=FALSE)
 ```
 
-```{r}
-Brecreation.internal <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_retail_recreation,color=BrazilGov$`C7_Restrictions on internal movement`))}+geom_point()+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")+labs(y="Activity in retail and recreation places (% change from baseline)",title = "Change in activity  in retail and recreation places with restrictions on internal movement.")
-print(Brecreation.internal)
+####  By the plot below, we observe that public reaction after different level of closing workplaces. The frequency of visiting workplaces sharply decreased after government required closing(or work from home) for all-but-essential workplaces (eg grocery stores, doctors). But in the mid-late people tend to visiting workplaces under level 3 closing policy. 
+
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+covBworkplaces.closing <- {BrazilGov %>% ggplot(aes(y=Brazil$gcmr_workplaces,x=BrazilGov$`C2_Workplace closing`))}+geom_point()+labs(x="Level of workplaces closing.",y="Activity change in workplaces",title = "Covariation between level of workplaces closing and acivity change in workplaces.")+geom_smooth(se=FALSE)
+
+Bworkplaces.closing<-{BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_workplaces,color=`C2_Workplace closing`))}+geom_point()+labs(x="date", y="Activity change in workplaces",title = "Activity change in workplaces",subtitle = "Observing level of workplaces closing.")+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")
+
+grid.arrange(Bworkplaces.closing,covBworkplaces.closing)
+```
+
+### Covariation between change in activity in grocery and pharmacy places and level of requirements on staying at home.
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Bgrocer.home <- {BrazilGov %>% ggplot(aes(x=Date,y=Brazil$gcmr_grocery_pharmacy,color=`C6_Stay at home requirements`))}+geom_point()+scale_x_date(date_breaks = "2 weeks", date_labels = "%d/%m")+labs(y="Activity in grocery and pharmacy places(% change from baseline)",title = "Change in activity  in retail and recreation places with restrictions on internal movement.")
+
+covBgrocer.home <- ggplot(data=BrazilGov ,aes(y=Brazil$gcmr_grocery_pharmacy,x=BrazilGov$`C6_Stay at home requirements`))+geom_point()+labs(y="Activity in retail and recreation places (% change from baseline)",title = "Change in activity  in retail and recreation places with restrictions on internal movement.")+geom_smooth(se=FALSE)
+
+grid.arrange(Bgrocer.home,covBgrocer.home)
+```
+
+
+## Italy
+
+#### 1.
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+
+ItalyData <- {CovidData %>% 
+    filter((str_detect(country, "Italy") ) & (date > as.Date("2020-02-06")))%>%
+    select(country,date, mov_rest, pub_health, gov_soc_econ, lockdown, apple_mtr_walking, gcmr_retail_recreation, gcmr_grocery_pharmacy, gcmr_workplaces, gdp_capita,gcmr_residential)}
+
+
+Iretail.internal<-{ItalyGov %>% ggplot(aes(x=Date,y=ItalyData$gcmr_retail_recreation,color=`C6_Stay at home requirements`))}+geom_point()+labs(x="date", y="Activity change in recreation",title = "Sharp decrease in .")+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")
+
+
+covIretail.internal<-{ItalyGov%>% ggplot(aes(x=`C6_Stay at home requirements`,y=ItalyData$gcmr_retail_recreation,))}+geom_point()+labs(x="Level of staying at home requirement",y="Activity change in retail and recreation places",title= "Covariation between level of staying at home requirements and activity change in retail and recreation places")+scale_color_brewer(palette="Set1")+geom_smooth(se=FALSE)
+
+grid.arrange(Bretail.internal,covBretail.internal)
+```
+
+#### 2. Staying at home & Residential activities.
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+Iresi.home <- {ItalyGov %>% ggplot(aes(x=Date,y=ItalyData$gcmr_residential,color=`C6_Stay at home requirements`))}+geom_point()+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")+labs(y="Activity in residential places (% change from baseline)",title = "Change in activity  in residential places with requirements on staying at home.")
+
+covIresi.home <- {ItalyGov %>% ggplot(aes(y=ItalyData$gcmr_residential,x=`C6_Stay at home requirements`))}+geom_point()+labs(x="Level of requirements on staying at home",y="Activity change in residential places",title = "Covariation between level of requiring staying at home and acivity change in residential places.")+geom_smooth(se=FALSE)
+
+grid.arrange(Iresi.home,covIresi.home)
+```
+
+#### 3. workplaces closing & freuqency visiting workplaces
+```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+covIworkplaces.closing <- {ItalyGov %>% ggplot(aes(y=ItalyData$gcmr_workplaces,x=ItalyGov$`C2_Workplace closing`))}+geom_point()+labs(x="Level of workplaces closing.",y="Activity change in workplaces",title = "Covariation between level of workplaces closing and acivity change in workplaces.")+geom_smooth(se=FALSE)
+
+Iworkplaces.closing<-{ItalyGov %>% ggplot(aes(x=Date,y=ItalyData$gcmr_workplaces,color=`C2_Workplace closing`))}+geom_point()+labs(x="date", y="Activity change in workplaces",title = "Activity change in workplaces",subtitle = "Observing level of workplaces closing.")+scale_x_date(date_breaks = "3 weeks", date_labels = "%d/%m")
+
+grid.arrange(Iworkplaces.closing,covIworkplaces.closing)
 ```
