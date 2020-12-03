@@ -21,6 +21,7 @@ library(stringr)
 library(gridExtra)
 library(plyr)
 library(kableExtra)
+library(cowplot)
 
 CovidData<- import("tidycovid19.csv", setclass="tibble")
 CovidData$date = as.Date(parse_date_time(CovidData$date,orders=c("y","ym","ymd")))
@@ -90,27 +91,66 @@ grid.arrange(Americaconfirmed,Americadeaths)
 #### Brazil
 
 ##### 1.Daily confirmed cases in Brazil climbed up to 70,000 at the end of July and decreased until the beginning of November.Recently the number of daily confirmed cases has tendency to increase.
-
+##### 2.Relationship between Number of daily confirmed cases and the frequency that people visit retail and recreation places in Brazil.
 ```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
-Bdaily.confirmed<-{BrazilData%>%ggplot(aes(x=date,y=daily_confirmed))}+labs(x="Date",y="Daily confirmed cases",title = "Daily confirmed case in Brazil.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_smooth(method = "loess")#local regression fitting
+Bdaily.confirmed<-{Brazil%>%
+    #filter(!(weekdays(as.Date(date)) %in% c('Saturday','Sunday')))%>%
+    ggplot(aes(x=date,y=daily_confirmed))}+labs(x="Date",y="Daily confirmed cases",title = "Daily confirmed case in Brazil.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_smooth(method = "loess")+geom_vline(xintercept = as.numeric(ymd("2020-07-31")), linetype="dashed", 
+                color = "steelblue",size=1)+geom_vline(xintercept = as.numeric(ymd("2020-03-31")), linetype="dashed", 
+                color = "steelblue",size=1)#local regression fitting
 
-Bdaily.deaths<-{BrazilData%>%ggplot(aes(x=date,y=daily_deaths))}+labs(x="Date",y="Daily deaths in Brazil",title = "Daily deaths in Brazil.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_smooth(method = "loess")
+Bweekdays<-Brazil$date[!weekdays(as.Date(Brazil$date))%in% c('Saturday','Sunday')]
   
-grid.arrange(Bdaily.confirmed,Bdaily.deaths)
+Bconfirm.retail.date<-{Brazil%>%
+    ggplot(aes(x=date, y=gcmr_retail_recreation,color=daily_confirmed))} +  geom_point(aes(x=))+labs(x="date",y="Activity in recreation (% change from baseline)",title ="Recovering of the activity in retail and recreation places.")+geom_vline(xintercept = as.numeric(ymd("2020-07-31")), linetype="dashed", 
+                color = "steelblue",size=1)+geom_vline(xintercept = as.numeric(ymd("2020-03-31")), linetype="dashed", 
+                color = "steelblue",size=1)+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")
+
+Bconfirm.retail<-{Brazil%>%
+    filter(date>as.Date("2020-03-31") &date<as.Date("2020-8-1"))%>%
+    ggplot(aes(x=daily_confirmed, y=gcmr_retail_recreation))} +  geom_point(aes(x=))+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Relationship between daily confirmed cases and the frequency that people visit retail and recreation places",subtitle ="Date before 01/04 and after 31/07")+geom_smooth(method = "loess")
+
+Bconfirm.retail1<-{Brazil%>%
+    filter(date>as.Date("2020-07-31") & daily_confirmed>0)%>%
+    ggplot(aes(x=daily_confirmed, y=gcmr_retail_recreation))} +  geom_point(aes(x=))+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Relationship between daily confirmed cases and the frequency that people visit retail and recreation places",subtitle ="Date before 01/04 and after 31/07")+geom_smooth(method = "loess")
+
+#grid.arrange(Bconfirm.retail.date, arrangeGrob(Bconfirm.retail,Bconfirm.retail1),ncol=2)
+
+grid.arrange(Bconfirm.retail.date,Bconfirm.retail,Bconfirm.retail1, layout_matrix = rbind(c(1,1),c(2,3)))
 ```
 
-##### 2.Relationship between Number of daily confirmed cases and the frequency that people visit retail and recreation places in Brazil.
+#### 3. Workplaces
 
 ```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
-Brazilconfirm.retail<-ggplot(Brazil, aes(x=daily_confirmed, y=gcmr_retail_recreation)) +  geom_point()+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Relationship between daily confirmed cases and the frequency that people visit retail and recreation places",subtitle =" Drawn from Google Community Mobility Reports")+geom_smooth(method = "loess")
-print(Brazilconfirm.retail)
- 
-Brazilconfirm.gro<- ggplot(Brazil, aes(x=daily_confirmed, y=Brazil$gcmr_grocery_pharmacy)) +  geom_point()+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Daily confirmed cases and activity change in grocery and pharmacy places.",subtitle =" Drawn from Google Community Mobility Reports")+geom_smooth(method = "loess")
-print(Brazilconfirm.gro)
 
-Brazilconfirm.work<- ggplot(Brazil, aes(x=daily_confirmed, y=Brazil$gcmr_workplaces)) +  geom_point()+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Daily confirmed cases and activity change in workplaces.",subtitle =" Drawn from Google Community Mobility Reports")+geom_smooth(method = "loess")
-print(Brazilconfirm.work)
+Bconfirm.work.date<-{Brazil%>%
+    ggplot(aes(x=date, y=gcmr_workplaces,color=daily_confirmed))} +  geom_point(aes(x=))+labs(x="date",y="Activity in workplaces(% change from baseline)",title ="Recovering of the activity in  workplaces.")+geom_vline(xintercept = as.numeric(ymd("2020-07-31")), linetype="dashed", 
+                color = "steelblue",size=1)+geom_vline(xintercept = as.numeric(ymd("2020-03-31")), linetype="dashed", 
+                color = "steelblue",size=1)+scale_x_date(date_breaks = "month", date_labels = "%d/%m")
+print(Bconfirm.work.date)
+
+
+Bconfirm.work.date1<-{Brazil%>%
+        filter(!(weekdays(as.Date(date)) %in% c('Saturday','Sunday')))%>%
+    ggplot(aes(x=date, y=gcmr_workplaces,color=daily_confirmed))} +  geom_point(aes(x=))+labs(x="date",y="Activity in workplaces(% change from baseline)",title ="Recovering of the activity in  workplaces.")+geom_vline(xintercept = as.numeric(ymd("2020-07-31")), linetype="dashed", 
+                color = "steelblue",size=1)+geom_vline(xintercept = as.numeric(ymd("2020-03-31")), linetype="dashed", 
+                color = "steelblue",size=1)+scale_x_date(date_breaks = "month", date_labels = "%d/%m")
+print(Bconfirm.work.date1)
+
+
+Bconfirm.work<-{Brazil%>%    
+    filter(date>as.Date("2020-03-20"))%>%
+    ggplot(aes(x=daily_confirmed, y=gcmr_workplaces))} +  geom_point()+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Relationship between daily confirmed cases and the frequency that people visit retail and recreation places",subtitle =" Drawn from Google Community Mobility Reports")+geom_smooth(method = "loess")
+
+Brazilweekdays<-Brazil$date[!weekdays(as.Date(Brazil$date))%in% c('Saturday','Sunday')]
   
+newBconfirm.work<-{Brazil%>%
+    filter(date>as.Date("2020-03-20"))%>%   
+    filter(!(weekdays(as.Date(date)) %in% c('Saturday','Sunday')))%>%
+    ggplot(aes(x=daily_confirmed, y=gcmr_workplaces))} +  geom_point()+labs(x="Number of daily confirmed cases",y="Activity in recreation (% change from baseline)",title ="Relationship between daily confirmed cases and the frequency that people visit retail and recreation places",subtitle ="Only data in workdays.")+geom_smooth(method = "loess")
+
+grid.arrange(Bconfirm.work.date, Bconfirm.work.date1, Bconfirm.work, newBconfirm.work, ncol=2, nrow =2)
+
 ```
 
 #### Canada
@@ -118,11 +158,11 @@ print(Brazilconfirm.work)
 #####1.There are two phases in Canada so we divide into phase one and phase two. Phase one started at beginning of Feburary and reached 2,000 cases to one-month period with less than 1,000 daily confirmed cases. Second phase has started around August and it is noticeable that second wave reaches much higher daily confirmed cases. 
 
 ```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
-Cdaily.confirmed<-{CanadaData%>%ggplot(aes(x=date,y=daily_confirmed))}+labs(x="Date",y="Daily confirmed cases",title = "Daily confirmed in Canada.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_vline(xintercept = as.numeric(ymd("2020-07-15")), linetype="dashed", 
+Cdaily.confirmed<-{Canada%>%ggplot(aes(x=date,y=daily_confirmed))}+labs(x="Date",y="Daily confirmed cases",title = "Daily confirmed in Canada.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_vline(xintercept = as.numeric(ymd("2020-07-15")), linetype="dashed", 
                 color = "steelblue",size=1)+geom_vline(xintercept = as.numeric(ymd("2020-04-30")), linetype="dashed", 
                 color = "steelblue",size=1)+geom_smooth(method = "loess")
 
-Cdaily.deaths<-{BrazilData%>%ggplot(aes(x=date,y=daily_deaths))}+labs(x="Date",y="Daily deaths",title = "Daily deaths in Canada.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_vline(xintercept = as.numeric(ymd("2020-07-15")), linetype="dashed", 
+Cdaily.deaths<-{Canada%>%ggplot(aes(x=date,y=daily_deaths))}+labs(x="Date",y="Daily deaths",title = "Daily deaths in Canada.")+geom_point()+scale_color_brewer(palette="Set1")+scale_x_date(date_breaks = "3 week", date_labels = "%d/%m")+geom_vline(xintercept = as.numeric(ymd("2020-07-15")), linetype="dashed", 
                 color = "steelblue",size=1)+geom_smooth(method = "loess")+geom_vline(xintercept = as.numeric(ymd("2020-04-30")), linetype="dashed", 
                 color = "steelblue",size=1)
   
@@ -141,7 +181,7 @@ Canadaphase2.retail<-ggplot(Canadaphase2, aes(x=Canadaphase2$daily_confirmed, y=
 
 grid.arrange(Canadaphase1.retail,Canadaphase2.retail)
 ```
-##### 3.
+##### 3.workplaces
 
 ```{r,echo=FALSE,results='hide',message=FALSE,warning=FALSE}
 Canadaphase1.work<-ggplot(Canadaphase1, aes(x=Canadaphase1$daily_confirmed, y=Canadaphase1$gcmr_workplaces)) +  geom_point(colour="red")+labs(x="Number of daily confirmed cases",y="Activity in workplaces (% change from baseline)",title ="1st wave: Number of daily confirmed cases and activity change in workplaces.",subtitle ="Drawn from Google Community Mobility Reports")+geom_smooth(method="loess",se=FALSE)
@@ -160,23 +200,14 @@ grid.arrange(Canadaphase1.work,Canadaphase2.work)
 The variables chosen shows below with definition and coding, each measured in ordinal scale.
 
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
-varname<-c("*C1_School closing","*C2_Workplace closing","*C4_Restrictions on gatherings","*C6_Stay at home requirements","*C7_Restrictions on internal movement","*C8_International travel controls")
-vardef<-c("Record closings of schools and universities","Record closings of workplaces","Record limits on private gatherings","Record orders to 'shelter-in-place' and otherwise confine to the home","Record restrictions on internal movement between cities/regions","Record restrictions on international travel. 
-          Note: this records policy for foreign travellers, not citizens")
+varname<-c("*C2_Workplace closing","*C6_Stay at home requirements")
+vardef<-c("Record closings of workplaces","Record orders to 'shelter-in-place' and otherwise confine to the home")
 
-c1<-c("0 - no measures,   1 - recommend closing or all schools open with alterations resulting in significant differences compared to non-Covid-19 operations,   2 - require closing (only some levels or categories, eg just high school, or just public schools,   3 - require closing all levels \nBlank - no data")
 
 c2<-c("0 - no measures,
 1 - recommend closing (or recommend work from home),
 2 - require closing (or work from home) for some sectors or categories of workers,
 3 - require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors),
-Blank - no data")
-
-c4<-c("	0 - no restrictions,
-1 - restrictions on very large gatherings (the limit is above 1000 people),  
-2 - restrictions on gatherings between 101-1000 people,  
-3 - restrictions on gatherings between 11-100 people,  
-4 - restrictions on gatherings of 10 people or less,
 Blank - no data")
 
 c6=c("	0 - no measures,
@@ -185,18 +216,8 @@ c6=c("	0 - no measures,
 3 - require not leaving house with minimal exceptions (eg allowed to leave once a week, or only one person can leave at a time, etc),
 Blank - no data")
 
-c7=c("0 - no measures ,
-1 - recommend not to travel between regions/cities ,  
-2 - internal movement restrictions in place ,
-Blank - no data")
 
-c8=("0 - no restrictions ,  
-1 - screening arrivals ,  
-2 - quarantine arrivals from some or all regions ,  
-3 - ban arrivals from some regions ,  
-4 - ban on all regions or total border closure ,  
-Blank - no data")
-varcoding=c(c1,c2,c4,c6,c7,c8)
+varcoding=c(c2,c6)
 data.frame(varname, vardef, varcoding) %>%
   kbl( col.names = c("Variable name", "Variable definition", "Variable coding")) %>%
    kable_styling()
